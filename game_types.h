@@ -126,7 +126,6 @@ struct app_state {
 	bool refresh;
 	struct timespec game_over_until;
 	// Speed
-	struct timespec last_tick;
 	unsigned long tick_interval;
 	int timer_fd;
 	// Score

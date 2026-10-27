@@ -12,11 +12,21 @@
 
 #define PENALTY_SEC 2
 
-static void update_timer_interval(int timer_fd, long interval_ms) {
+static void update_timer_interval(int timer_fd, unsigned long interval_ms) {
 	struct itimerspec new_value = {0};
-	new_value.it_interval.tv_sec = interval_ms / 1000;
-    new_value.it_interval.tv_nsec = (interval_ms % 1000) * 1000000L;
+	new_value.it_interval.tv_sec = interval_ms / 1000U;
+    new_value.it_interval.tv_nsec = (interval_ms % 1000U) * 1000000UL;
 	new_value.it_value = new_value.it_interval;
+
+	timerfd_settime(timer_fd, 0, &new_value, NULL);
+}
+
+static void one_shot_timer(int timer_fd, unsigned long value_ms) {
+	struct itimerspec new_value = {0};
+	new_value.it_value.tv_sec = value_ms / 1000U;
+	new_value.it_value.tv_nsec = (value_ms % 1000U) * 1000000UL;
+	new_value.it_interval.tv_sec = 0;
+	new_value.it_interval.tv_nsec = 0;
 
 	timerfd_settime(timer_fd, 0, &new_value, NULL);
 }
@@ -48,10 +58,13 @@ void reset_snake(struct app_state *app)
 	app->snake_len = 1;
 	app->session_score = 0;
 	app->game_started = false;
-	app->last_tick = (struct timespec){0};
 	app->tick_interval = 180;
 	if (app->timer_fd > 0) {
 		update_timer_interval(app->timer_fd, app->tick_interval);
+	}
+	else {
+		fprintf(stderr, "The timer fd for unexcepted reason does not exist the game will stop\n");
+		app->running = false;
 	}
 	app->queue_len = 0;
 	app->dir = DIR_UP;
@@ -63,12 +76,12 @@ static void trigger_game_over(struct app_state *app) {
 	if (app->session_score > app->high_score) {
 		app->high_score = app->session_score;
 	}
-	reset_snake(app);
 	app->game_over = true;
 	app->refresh = true;
 	
 	clock_gettime(CLOCK_MONOTONIC, &app->game_over_until);
 	app->game_over_until.tv_sec += PENALTY_SEC;
+	one_shot_timer(app->timer_fd, 2000UL);
 }
 
 void update_game(struct app_state *app)

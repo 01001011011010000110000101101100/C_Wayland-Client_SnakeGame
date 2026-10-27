@@ -89,6 +89,7 @@ int main(void)
                 app.game_over = false;
                 app.game_started = false;
                 app.refresh = true;
+                reset_snake(&app);
                 frame_handler(&app, NULL, 0);
             }
         }
