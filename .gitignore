@@ -1,3 +1,4 @@
 .vscode/
 xdg-shell-client-protocol.h
 xdg-shell-protocol.c
+snake_game
